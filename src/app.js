@@ -24,7 +24,6 @@ var TopMenuLayer = cc.Layer.extend({
     },
 
    
-
 });
 
 
