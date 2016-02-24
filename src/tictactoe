@@ -1,0 +1,831 @@
+/* 
+ * Adaptación del TicTacToe V1.0 en base al proyecto
+   de grayfire.
+ */
+ 
+
+
+var TttxLayer = cc.Layer.extend({
+    _game_style:0,
+    _size:null,
+    _left_top:null,
+    _right_bottom:null,
+    _menuItemPlay:null,
+    _menuItem:null,
+    _empty_menu:null,
+    _roundrItem:null,
+    _roundlItem:null,
+    _round_menu:null,
+    _slideItem:null,
+    _slide_menu:null,
+    _stepItem:null,
+    _step_menu:null,
+    _aiItem:null,
+    _ai_menu:null,
+    _label_judge_step:null,
+    _label_judge_num:null,
+    _label_msg:null,
+    _label_step:null,
+    _label_ai:null,
+    _sprite_turn:null,
+    _sprite_put_o:null,
+    _sprite_put_x:null,
+    _sprite_selected:null,
+    _sprite_win_mark:null,
+    _marks:null,
+    _toggle:false,
+    _step:0,
+    _judge_step:9,
+    _o_count:0,
+    _x_count:0,
+    _winner:0,
+    _ai_type:0,
+    ctor:function (style) {
+        this._super();
+
+        this._game_style = style;
+        this._size = cc.director.getWinSize();
+        this._left_top = cc.p(this._size.width / 2 - 150, this._size.height / 2 + 150);
+        this._right_bottom = cc.p(this._left_top.x + 300, this._left_top.y -300);
+        var sprite = cc.Sprite.create(res.BackGround_png);
+        sprite.setPosition(this._size.width / 2, this._size.height / 2);
+        this.addChild(sprite, 0);
+
+       
+        
+
+        if (this._game_style == 3) {
+            this.drawHint(hintsTbl[3]);
+        } else if (this._game_style == 1) {
+            this.drawHint(hintsTbl[1]);
+        } else if (this._game_style == 2) {
+            this.drawHint(hintsTbl[2]);
+        } else {
+            this.drawHint(hintsTbl[0]);
+        }
+
+        
+       
+
+        // Turn "o" or "x"
+        this._label_msg = cc.LabelTTF.create("¡Ganáste!", "Arial", 24);
+        this._label_msg.setPosition(this._size.width - 180, this._size.height-65);
+        this._label_msg.setVisible(false);
+        this.addChild(this._label_msg, 0);
+
+        this._sprite_turn = [];
+        this._sprite_turn[0] = cc.Sprite.create(res.UpBtn_png);
+        this._sprite_turn[0].setPosition(this._size.width - 180, this._size.height-100);
+        this._sprite_turn[0].setScale(0.5, 0.5);
+        this._sprite_turn[0].setRotation(180);
+        this._sprite_turn[0].setVisible(true);
+        this.addChild(this._sprite_turn[0], 0);
+        this._sprite_turn[1] = cc.Sprite.create(res.UpBtn_png);
+        this._sprite_turn[1].setPosition(this._size.width - 100, this._size.height-100);
+        this._sprite_turn[1].setScale(0.5, 0.5);
+        this._sprite_turn[1].setRotation(180);
+        this._sprite_turn[1].setVisible(false);
+        this.addChild(this._sprite_turn[1], 0);
+
+        this._sprite_put_o = cc.Sprite.create(res.o_png);
+        this._sprite_put_o.setPosition(this._size.width - 180, this._size.height-130);
+        this._sprite_put_o.setScale(0.4, 0.4);
+        this._sprite_put_o.setVisible(true);
+        this.addChild(this._sprite_put_o, 0);
+        this._sprite_put_x = cc.Sprite.create(res.x_png);
+        this._sprite_put_x.setPosition(this._size.width - 100, this._size.height-130);
+        this._sprite_put_x.setScale(0.4, 0.4);
+        this._sprite_put_x.setVisible(true);
+        this.addChild(this._sprite_put_x, 0);
+
+        // Step num
+        this._label_step = cc.LabelTTF.create("Paso ", "Arial", 32);
+        this._label_step.setPosition(this._size.width - 145, this._size.height-180);
+        this._label_step.setVisible(true);
+        this.addChild(this._label_step, 0);
+
+        // last step num
+        this._label_judge_step = cc.LabelTTF.create("Último paso ", "Arial", 18);
+        this._label_judge_step.setPosition(this._size.width - 150, 190);
+        this._label_judge_step.setVisible(true);
+        this.addChild(this._label_judge_step, 0);
+
+        var judge_num_str = (this._judge_step + 1).toString();
+        this._label_judge_num = cc.LabelTTF.create(judge_num_str, "Arial", 24);
+        this._label_judge_num.setPosition(this._size.width - 90, 190);
+        this._label_judge_num.setVisible(true);
+        this.addChild(this._label_judge_num, 0);
+
+        // step up down button
+        this._step_menu = [];
+        this._stepItem = [];
+        this._stepItem[0] = new cc.MenuItemImage(res.UpBtn_png, res.UpBtn_s_png, this.onStepUpDown, this);
+        this._stepItem[0].setScale(0.5);
+        this._step_menu[0] = new cc.Menu(this._stepItem[0]);
+        this._step_menu[0].setPosition(this._size.width - 50, 200);
+        if (this._game_style == 3) this._step_menu[0].setVisible(false);
+        else this._step_menu[0].setVisible(true);
+        this.addChild(this._step_menu[0], 0);
+        this._stepItem[1] = new cc.MenuItemImage(res.UpBtn_png, res.UpBtn_s_png, this.onStepUpDown, this);
+        this._stepItem[1].setScale(0.5);
+        this._stepItem[1].setRotation(180);
+        this._step_menu[1] = new cc.Menu(this._stepItem[1]);
+        this._step_menu[1].setPosition(this._size.width - 50, 180);
+        if (this._game_style == 3) this._step_menu[1].setVisible(false);
+        else this._step_menu[1].setVisible(true);
+        this.addChild(this._step_menu[1], 0);
+
+        // ai select button
+        this._ai_menu = [];
+        this._aiItem = [];
+        this._aiItem[0] = new cc.MenuItemImage(res.RadioBtn_png, res.RadioBtn_s_png, this.onAiSelect, this);
+        this._ai_menu[0] = new cc.Menu(this._aiItem[0]);
+        this._ai_menu[0].setPosition(this._size.width - 180, 130);
+        this._ai_menu[0].setVisible(true);
+        this.addChild(this._ai_menu[0], 0, 30);
+        this._aiItem[1] = new cc.MenuItemImage(res.RadioBtn_png, res.RadioBtn_s_png, this.onAiSelect, this);
+        this._ai_menu[1] = new cc.Menu(this._aiItem[1]);
+        this._ai_menu[1].setPosition(this._size.width - 180, 90);
+        this._ai_menu[1].setVisible(true);
+        this.addChild(this._ai_menu[1], 0, 31);
+        this._aiItem[2] = new cc.MenuItemImage(res.RadioBtn_png, res.RadioBtn_s_png, this.onAiSelect, this);
+        this._ai_menu[2] = new cc.Menu(this._aiItem[2]);
+        this._ai_menu[2].setPosition(this._size.width - 180, 50);
+        this._ai_menu[2].setVisible(true);
+        this.addChild(this._ai_menu[2], 0, 32);
+
+        this._label_ai = [];
+        this._label_ai[0] = cc.LabelTTF.create("vs humano", "Arial", 18);
+        this._label_ai[0].setPosition(this._size.width - 100, 130);
+        this._label_ai[0].setVisible(true);
+        this.addChild(this._label_ai[0], 0);
+        this._label_ai[1] = cc.LabelTTF.create("vs máquina = o", "Arial", 18);
+        this._label_ai[1].setPosition(this._size.width - 100, 90);
+        this._label_ai[1].setVisible(true);
+        this.addChild(this._label_ai[1], 0);
+        this._label_ai[2] = cc.LabelTTF.create("vs máquina = x", "Arial", 18);
+        this._label_ai[2].setPosition(this._size.width - 100, 50);
+        this._label_ai[2].setVisible(true);
+        this.addChild(this._label_ai[2], 0);
+
+        this._sprite_selected = cc.Sprite.create(res.Selected_png);
+        this._sprite_selected.setPosition(this._size.width - 102, 130);
+        this._sprite_selected.setVisible(true);
+        this.addChild(this._sprite_selected, 0);
+
+        // empty button
+        this._empty_menu = [];
+        this._menuItem = [];
+        for (var i = 0 ; i < 3 ; i++){
+            this._menuItem[i] = new cc.MenuItemImage(res.Empty_png, res.Empty_png, this.onClick, this);
+            this._empty_menu[i] = new cc.Menu(this._menuItem[i]);
+            this._empty_menu[i].setPosition(this._left_top.x + 10 + 40 + (100*i),
+                this._left_top.y - 10 - 40);
+            this.addChild(this._empty_menu[i], 0, 100 + i);
+
+            var sprite_o = cc.Sprite.create(res.o_png);
+            sprite_o.setPosition(this._left_top.x + 10 + 40 + (100*i),
+                this._left_top.y - 10 - 40);
+            sprite_o.setVisible(false);
+            this.addChild(sprite_o, 0, 200 + i);
+
+            var sprite_x = cc.Sprite.create(res.x_png);
+            sprite_x.setPosition(this._left_top.x + 10 + 40 + (100*i),
+                this._left_top.y - 10 - 40);
+            sprite_x.setVisible(false);
+            this.addChild(sprite_x, 0, 300 + i);
+        }
+        for (var i = 3 ; i < 6 ; i++){
+            this._menuItem[i] = new cc.MenuItemImage(res.Empty_png, res.Empty_png, this.onClick, this);
+            this._empty_menu[i] = new cc.Menu(this._menuItem[i]);
+            this._empty_menu[i].setPosition(this._left_top.x + 10 + 40 + (100 * (i-3)),
+                this._left_top.y - 10 - 40 -100);
+            this.addChild(this._empty_menu[i], 0, 100 + i);
+
+            var sprite_o = cc.Sprite.create(res.o_png);
+            sprite_o.setPosition(this._left_top.x + 10 + 40 + (100 * (i-3)),
+                this._left_top.y - 10 - 40 -100);
+            sprite_o.setVisible(false);
+            this.addChild(sprite_o, 0, 200 + i);
+
+            var sprite_x = cc.Sprite.create(res.x_png);
+            sprite_x.setPosition(this._left_top.x + 10 + 40 + (100 * (i-3)),
+                this._left_top.y - 10 - 40 -100);
+            sprite_x.setVisible(false);
+            this.addChild(sprite_x, 0, 300 + i);
+        }
+        for (var i = 6 ; i < 9 ; i++){
+            this._menuItem[i] = new cc.MenuItemImage(res.Empty_png, res.Empty_png, this.onClick, this);
+            this._empty_menu[i] = new cc.Menu(this._menuItem[i]);
+            this._empty_menu[i].setPosition(this._left_top.x + 10 + 40 + (100 * (i-6)),
+                this._left_top.y - 10 - 40 -100 -100);
+            this.addChild(this._empty_menu[i], 0, 100 + i);
+
+            var sprite_o = cc.Sprite.create(res.o_png);
+            sprite_o.setPosition(this._left_top.x + 10 + 40 + (100 * (i-6)),
+                this._left_top.y - 10 - 40 -100 -100);
+            sprite_o.setVisible(false);
+            this.addChild(sprite_o, 0, 200 + i);
+
+            var sprite_x = cc.Sprite.create(res.x_png);
+            sprite_x.setPosition(this._left_top.x + 10 + 40 + (100 * (i-6)),
+                this._left_top.y - 10 - 40 -100 -100);
+            sprite_x.setVisible(false);
+            this.addChild(sprite_x, 0, 300 + i);
+        }
+
+        // round button
+        var round_r_pos = [
+            [  0, this._left_top.x + 100, this._left_top.y - 100 + 12],
+            [  0, this._left_top.x + 200, this._left_top.y - 100 + 12],
+            [  0, this._left_top.x + 200, this._left_top.y - 200 + 12],
+            [  0, this._left_top.x + 100, this._left_top.y - 200 + 12]
+        ];
+        var round_l_pos = [
+            [  0, this._left_top.x + 100, this._left_top.y - 200 - 12],
+            [  0, this._left_top.x + 100, this._left_top.y - 100 - 12],
+            [  0, this._left_top.x + 200, this._left_top.y - 100 - 12],
+            [  0, this._left_top.x + 200, this._left_top.y - 200 - 12]
+        ];
+
+        this._round_menu = [];
+        this._roundrItem = [];
+        this._roundlItem = [];
+        for(var i = 0 ; i < 4 ; i++){
+            this._roundrItem[i] = new cc.MenuItemImage(res.Round_r_png, res.Round_r_s_png, this.onRound, this);
+            this._roundrItem[i].setRotation(round_r_pos[i][0]);
+            this._round_menu[i] = new cc.Menu(this._roundrItem[i]);
+            this._round_menu[i].setPosition(round_r_pos[i][1],round_r_pos[i][2]);
+            if ((this._game_style == 2) || (this._game_style == 3)) this._round_menu[i].setVisible(false);
+            this.addChild(this._round_menu[i], 0, 400 + i);
+
+            this._roundlItem[i] = new cc.MenuItemImage(res.Round_l_png, res.Round_l_s_png, this.onRound, this);
+            this._roundlItem[i].setRotation(round_l_pos[i][0]);
+            this._round_menu[4+i] = new cc.Menu(this._roundlItem[i]);
+            this._round_menu[4+i].setPosition(round_l_pos[i][1],round_l_pos[i][2]);
+            if ((this._game_style == 2) || (this._game_style == 3)) this._round_menu[4+i].setVisible(false);
+            this.addChild(this._round_menu[4+i], 0, 400 + 4 + i);
+        }
+
+        // slide button
+        var slide_pos = [
+            [  0, this._left_top.x     + 150, this._left_top.y     +  15],
+            [ 90, this._right_bottom.x +  15, this._left_top.y     - 150],
+            [180, this._left_top.x     + 150, this._right_bottom.y -  15],
+            [270, this._left_top.x     -  15, this._left_top.y     - 150],
+        ];
+
+        this._slide_menu = [];
+        this._slideItem = [];
+        for(var i = 0 ; i < 4 ; i++){
+            this._slideItem[i] = new cc.MenuItemImage(res.UpBtn_png, res.UpBtn_s_png, this.onSlide, this);
+            this._slideItem[i].setRotation(slide_pos[i][0]);
+            this._slide_menu[i] = new cc.Menu(this._slideItem[i]);
+            this._slide_menu[i].setPosition(slide_pos[i][1],slide_pos[i][2]);
+            if ((this._game_style == 1) || (this._game_style == 3)) this._slide_menu[i].setVisible(false);
+            this.addChild(this._slide_menu[i], 0, 400 + 8 + i);
+        }
+
+        // win mark
+        this._sprite_win_mark = cc.Sprite.create(res.WinMark_png);
+        this._sprite_win_mark.setVisible(false);
+        this.addChild(this._sprite_win_mark, 0);
+
+        // play button
+        this._menuItemPlay = new cc.MenuItemImage(res.Play_png, res.Play_s_png, this.onPlay, this);
+        var menu = new cc.Menu(this._menuItemPlay);
+        menu.setPosition(this._size.width / 2, 22);
+        this.addChild(menu);
+
+        this.onPlay();
+
+        return true;
+    },
+
+    drawHint : function(hint) {
+        // title
+        var title_label = cc.LabelTTF.create(hint[0], "Arial", 32);
+        title_label.setPosition(this._size.width / 2, this._size.height-20);
+        this.addChild(title_label, 0);
+
+        // == left display ==
+        var label_x = 20;
+        var label_y = this._size.height-100;
+        var lavel_y_offset = 30;
+        var label_hint1 = cc.LabelTTF.create(hint[1], "Arial", 14);
+        label_hint1.setAnchorPoint(0,1);
+        label_hint1.setPosition(label_x, label_y);
+        label_hint1.setVisible(true);
+        this.addChild(label_hint1, 0);
+        var label_hint2 = cc.LabelTTF.create(hint[2], "Arial", 14);
+        label_hint2.setAnchorPoint(0,1);
+        label_hint2.setPosition(label_x, label_y - lavel_y_offset);
+        label_hint2.setVisible(true);
+        this.addChild(label_hint2, 0);
+        var label_hint3 = cc.LabelTTF.create(hint[3], "Arial", 14);
+        label_hint3.setAnchorPoint(0,1);
+        label_hint3.setPosition(label_x, label_y - lavel_y_offset * 2);
+        label_hint3.setVisible(true);
+        this.addChild(label_hint3, 0);
+        var label_hint4 = cc.LabelTTF.create(hint[4], "Arial", 14);
+        label_hint4.setAnchorPoint(0,1);
+        label_hint4.setPosition(label_x, label_y - lavel_y_offset * 3);
+        label_hint4.setVisible(true);
+        this.addChild(label_hint4, 0);
+        var label_hint5 = cc.LabelTTF.create(hint[5], "Arial", 14);
+        label_hint5.setAnchorPoint(0,1);
+        label_hint5.setPosition(label_x, label_y - lavel_y_offset * 4);
+        label_hint5.setVisible(true);
+        this.addChild(label_hint5, 0);
+    },
+
+    drawAll : function(){
+        for (var i = 0 ; i < 4 ; i++) {
+            var tmp = this.getChildByTag(500+i);
+            if (tmp != null) this.removeChild(tmp);
+        }
+        for (var i = 0 ; i < 9 ; i++) {
+            var tmp = this.getChildByTag(600+i);
+            if (tmp != null) this.removeChild(tmp);
+        }
+
+        for (var i = 0 ; i < 9 ; i++){
+            var sprite_o = this.getChildByTag(200+i);
+            var sprite_x = this.getChildByTag(300+i);
+            if(this._marks[i] == 1) {
+                sprite_o.setVisible(true);
+                sprite_x.setVisible(false);
+            } else if (this._marks[i] == 2) {
+                sprite_o.setVisible(false);
+                sprite_x.setVisible(true);
+            } else {
+                sprite_o.setVisible(false);
+                sprite_x.setVisible(false);
+            }
+        }
+
+        if (this._winner > 0){
+            // Win, Draw Message
+            if (this._winner == 1) {
+                this._label_msg.setString("¡Ganáste!");
+                this._label_msg.setPosition(this._size.width - 180, this._size.height-65);
+                this._label_msg.setVisible(true);
+                this._sprite_turn[0].setVisible(true);
+                this._sprite_turn[1].setVisible(false);
+                this._sprite_win_mark.setVisible(true);
+            } else if (this._winner == 2) {
+                this._label_msg.setString("¡Ganáste!");
+                this._label_msg.setPosition(this._size.width - 100, this._size.height-65);
+                this._label_msg.setVisible(true);
+                this._sprite_turn[0].setVisible(false);
+                this._sprite_turn[1].setVisible(true);
+                this._sprite_win_mark.setVisible(true);
+            } else {
+                this._label_msg.setString("Empate");
+                this._label_msg.setPosition(this._size.width - 140, this._size.height-65);
+                this._label_msg.setVisible(true);
+                this._sprite_turn[0].setVisible(false);
+                this._sprite_turn[1].setVisible(false);
+            }
+        } else {
+            // Put Message
+            this._label_msg.setVisible(false);
+            if (!this._toggle) {
+                this._sprite_turn[0].setVisible(true);
+                this._sprite_turn[1].setVisible(false);
+            } else {
+                this._sprite_turn[0].setVisible(false);
+                this._sprite_turn[1].setVisible(true);
+            }
+        }
+
+        // ai selection
+        for (var j = 0 ; j < 3 ; j++) {
+            if (this._ai_type == j) {
+                this._sprite_selected.setPosition(this._size.width - 100, 130 - j * 40);
+            }
+        }
+
+        // Step num
+        var judge_num_str = (this._judge_step + 1).toString();
+        this._label_judge_num.setString(judge_num_str);
+        var str = "Paso " + (this._step + 1).toString();
+        this._label_step.setString(str);
+    },
+
+    checkWinner : function(){
+        this._winner = 0;
+        if (this._step >= 4) {
+            for (var i = 0; i < ai_winTbl.length; i++) {
+                var tbl = ai_winTbl[i];
+                if ((this._marks[tbl[0]] == 1) &&
+                    (this._marks[tbl[1]] == 1) &&
+                    (this._marks[tbl[2]] == 1)) {
+                    if (this._winner==0){
+                        this._sprite_win_mark.setPosition(this._left_top.x + WinMarkTbl[i][0],
+                                                          this._left_top.y + WinMarkTbl[i][1]);
+                        this._sprite_win_mark.setScale(1, WinMarkTbl[i][2]);
+                        this._sprite_win_mark.setRotation(WinMarkTbl[i][3]);
+                        this._winner = 1;
+                    }
+                    if (this._winner==2) this._winner = 3;
+                } else if ((this._marks[tbl[0]] == 2) &&
+                    (this._marks[tbl[1]] == 2) &&
+                    (this._marks[tbl[2]] == 2)) {
+                    if (this._winner==0){
+                        this._sprite_win_mark.setPosition(this._left_top.x + WinMarkTbl[i][0],
+                                                          this._left_top.y + WinMarkTbl[i][1]);
+                        this._sprite_win_mark.setScale(1, WinMarkTbl[i][2]);
+                        this._sprite_win_mark.setRotation(WinMarkTbl[i][3]);
+                        this._winner = 2;
+                    }
+                    if (this._winner==1) this._winner = 3;
+                }
+            }
+        }
+
+        if (this._step == this._judge_step){
+            if (this._winner == 0) this._winner = 3;
+        } else {
+            if (this._winner == 3) this._winner = 0;
+        }
+    },
+
+    lockEvent : function (bool) {
+        this._menuItemPlay.setEnabled(bool);
+        for (var i = 0 ; i < 2 ; i++) {
+            this._step_menu[i].setEnabled(bool);
+        }
+        for (var i = 0 ; i < 3 ; i++) {
+            this._aiItem[i].setEnabled(bool);
+        }
+        for (var i = 0 ; i < 4 ; i++) {
+            this._roundrItem[i].setEnabled(bool);
+            this._roundlItem[i].setEnabled(bool);
+            this._slideItem[i].setEnabled(bool);
+        }
+        for (var i = 0 ; i < 9 ; i++) {
+            if(bool){
+                if (this._marks[i] == 0) this._menuItem[i].setEnabled(true);
+                else this._menuItem[i].setEnabled(false);
+            } else {
+                this._menuItem[i].setEnabled(bool);
+            }
+        }
+    },
+
+    lockLastBlock : function() {
+        if (this._game_style == 3) return;
+
+        var empty = -1;
+        var count = 0;
+        for (var i = 0 ; i < 9 ; i++){
+            if (this._marks[i] == -1) return; // already locked
+            if (this._marks[i] == 0) empty = i;
+            else ++count;
+        }
+        if (count == 8) {
+            this._marks[empty] = -1;
+            this._menuItem[empty].setEnabled(false);
+        }
+    },
+
+    actionFinish1 : function(){
+        this.drawAll();
+        this.lockEvent(true);
+    },
+
+    actionFinish2 : function(){
+        this.drawAll();
+        if (this._winner > 0) this.lockEvent(true);
+    },
+
+    isMark : function (index) {
+        if (this._marks[index] > 0) {
+            return true;
+        } else {
+            return false;
+        }
+    },
+
+    roundMarks : function(rt, isAi) {
+        var tmp = [];
+        for (var i = 0 ; i < 4 ; i++){
+            tmp[i] = this._marks[rt[i]];
+        }
+
+        for (var i = 0; i < 3; i++){
+            this._marks[rt[i]] = this._marks[rt[i+1]];
+        }
+        this._marks[rt[3]] = tmp[0];
+
+        if ((isAi) || (!isAi) && (this._ai_type == 0)) {
+            cc.director.getScheduler().scheduleCallbackForTarget(this, this.actionFinish1, 3, 0, 0);
+        } else {
+            cc.director.getScheduler().scheduleCallbackForTarget(this, this.actionFinish2, 3, 0, 0);
+        }
+
+        // draw animation
+        for (var i = 0 ; i < 9 ; i++){
+            var sprite_o = this.getChildByTag(200+i);
+            var sprite_x = this.getChildByTag(300+i);
+            for (var j = 0; j < 4 ; j++) {
+                if (rt[j] == i) {
+                    sprite_o.setVisible(false);
+                    sprite_x.setVisible(false);
+                    var dst = 0;
+                    if ((j > 0) && (j < 4)) dst = j - 1;
+                    else if (j == 0) dst = 3;
+                    if (tmp[j] == 1) {
+                        var sprite_o = cc.Sprite.create(res.o_png);
+                        sprite_o.setPosition(this._left_top.x + blockPosTbl[rt[j]][0],
+                            this._left_top.y + blockPosTbl[rt[j]][1]);
+                        sprite_o.runAction(new cc.MoveTo(2, cc.p(this._left_top.x + blockPosTbl[rt[dst]][0],
+                            this._left_top.y + blockPosTbl[rt[dst]][1])));
+                        this.addChild(sprite_o, 0, 500 + j);
+                    } else if (tmp[j] == 2) {
+                        var sprite_x = cc.Sprite.create(res.x_png);
+                        sprite_x.setPosition(this._left_top.x + blockPosTbl[rt[j]][0],
+                            this._left_top.y + blockPosTbl[rt[j]][1]);
+                        sprite_x.runAction(new cc.MoveTo(2, cc.p(this._left_top.x + blockPosTbl[rt[dst]][0],
+                            this._left_top.y + blockPosTbl[rt[dst]][1])));
+                        this.addChild(sprite_x, 0, 500 + j);
+                    }
+                    continue;
+                }
+            }
+        }
+    },
+
+    swapMarks : function (i, j) {
+        var tmp = [];
+        tmp[0] = this._marks[i];
+        tmp[1] = this._marks[j];
+        this._marks[i] = this._marks[j];
+        this._marks[j] = tmp[0];
+
+        if (tmp[1] == 1) {
+            var sprite_o_org = this.getChildByTag(200+j);
+            sprite_o_org.setVisible(false);
+
+            var sprite_o = cc.Sprite.create(res.o_png);
+            sprite_o.setPosition(this._left_top.x + blockPosTbl[j][0],
+                this._left_top.y + blockPosTbl[j][1]);
+            sprite_o.runAction(new cc.MoveTo(2, cc.p(this._left_top.x + blockPosTbl[i][0],
+                this._left_top.y + blockPosTbl[i][1])));
+            this.addChild(sprite_o, 0, 600 + j);
+        } else if (tmp[1] == 2) {
+            var sprite_x_org = this.getChildByTag(300+j);
+            sprite_x_org.setVisible(false);
+
+            var sprite_x = cc.Sprite.create(res.x_png);
+            sprite_x.setPosition(this._left_top.x + blockPosTbl[j][0],
+                this._left_top.y + blockPosTbl[j][1]);
+            sprite_x.runAction(new cc.MoveTo(2, cc.p(this._left_top.x + blockPosTbl[i][0],
+                this._left_top.y + blockPosTbl[i][1])));
+            this.addChild(sprite_x, 0, 600 + j);
+        }
+    },
+
+    slideMarks : function(index, isAi) {
+        var rt = ai_slideTbl[index];
+
+        // 4 pattern
+        // - o -
+        // - o o
+        // - - o
+        // o - o
+        for (var i = 0; i < 9; i+=3) {
+            if (this.isMark(rt[i])==false) {
+                if (this.isMark(rt[i + 1])) {
+                    this.swapMarks(rt[i],rt[i + 1]);
+                    if (this.isMark(rt[i + 2])) {
+                        this.swapMarks(rt[i + 1],rt[i + 2]);
+                    }
+                } else if (this.isMark(rt[i + 2])) {
+                    this.swapMarks(rt[i],rt[i + 2]);
+                }
+            } else if ((this.isMark(rt[i + 1]) == false) && (this.isMark(rt[i + 2]))) {
+                this.swapMarks(rt[i + 1],rt[i + 2]);
+            }
+        }
+
+        if ((isAi) || (!isAi) && (this._ai_type == 0)) {
+            cc.director.getScheduler().scheduleCallbackForTarget(this, this.actionFinish1, 3, 0, 0);
+        } else {
+            cc.director.getScheduler().scheduleCallbackForTarget(this, this.actionFinish2, 3, 0, 0);
+        }
+    },
+
+    aiProcess : function(){
+        var index = -1;
+        if ((this._ai_type > 0) && (this._winner == 0)) {
+            if (((!this._toggle) && (this._o_count > 0)) ||
+                ((this._toggle) && (this._x_count > 0))) {
+                if (this._game_style == 3) {
+                    index = ai_getNextPut(this._marks, this._step, this._ai_type);
+                } else {
+                    index = ai_getNextPut(this._marks, this._step, this._ai_type, this._judge_step);
+                }
+            }
+            if ((index < 0) && (this._game_style == 0)) {
+                var ai_slide = ai_getSlide(this._marks, this._step, this._ai_type);
+                if (ai_slide < 0) {
+                    var ai_round = ai_getRound(this._marks, this._step, this._ai_type);
+                    if (ai_round == -1) ai_round = 0;
+                    this.roundMarks(ai_roundTbl[ai_round], true);
+                } else if (ai_slide >= 10) {
+                    var ai_round = ai_getRound(this._marks, this._step, this._ai_type);
+                    if (ai_round < 0) {
+                        this.slideMarks(ai_slide - 10, true);
+                    }
+                    else {
+                        this.roundMarks(ai_roundTbl[ai_round], true);
+                    }
+                } else {
+                    this.slideMarks(ai_slide, true);
+                }
+            } else if ((index < 0) && (this._game_style == 1)){
+                var ai_round = ai_getRound(this._marks, this._step, this._ai_type);
+                if (ai_round == -1) ai_round = 0;
+                this.roundMarks(ai_roundTbl[ai_round]);
+            } else if ((index < 0) && (this._game_style == 2)){
+                var ai_slide = ai_getSlide(this._marks, this._step, this._ai_type);
+                if (ai_slide == -1) ai_slide = 0;
+                if (ai_slide >= 10) ai_slide -= 10;
+                this.slideMarks(ai_slide);
+            } else {
+                this._marks[index] = this._ai_type;
+                this._menuItem[index].setEnabled(false);
+                if (!this._toggle) --this._o_count;
+                else --this._x_count;
+            }
+
+            this.lockLastBlock();
+            this.checkWinner();
+            if(this._winner == 0) this._step = this._step + 1;
+            this._toggle = !this._toggle;
+            if (index >= 0){
+                this.drawAll();
+                this.lockEvent(true);
+            }
+        } else {
+            this.lockEvent(true);
+        }
+    },
+
+    onBackToMenu : function(){
+        cc.director.runScene(new TopMenuScene());
+    },
+
+    onPlay : function(){
+        this._toggle = false;
+        this._step = 0;
+        if (this._game_style == 3) {
+            this._judge_step = 8;
+            this._o_count = 9;
+            this._x_count = 9;
+        } else {
+            this._o_count = 4;
+            this._x_count = 4;
+        }
+        this._winner = 0;
+        this._marks = [];
+        for (var i = 0 ; i < 9 ; i++) {
+            this._marks[i] = 0;
+            this._menuItem[i].setEnabled(true);
+        }
+        this._sprite_win_mark.setVisible(false);
+
+        // ai_o
+        if (this._ai_type == 1){
+            var index = Math.floor(Math.random() * (8 + 1));
+            this._marks[index] = this._ai_type;
+            this._menuItem[index].setEnabled(false);
+            --this._o_count;
+            this._step = this._step + 1;
+            this._toggle = !this._toggle;
+        }
+
+        //cc.log("==onplay clicked");
+        this.drawAll();
+    },
+
+    onStepUpDown : function(target) {
+        for (var i = 0 ; i < 2 ; i++) {
+            if (target == this._stepItem[i]) {
+                if (i == 0) ++this._judge_step;
+                else --this._judge_step;
+                if (this._judge_step > 19) this._judge_step = 19;
+                if (this._judge_step < 8) this._judge_step = 8;
+            }
+        }
+        this.onPlay();
+    },
+
+    onAiSelect : function(target) {
+        for (var i = 0 ; i < 3 ; i++) {
+            if (target == this._aiItem[i]) {
+                if (this._ai_type == i) return;
+                else this._ai_type = i;
+            }
+        }
+        this.onPlay();
+    },
+
+    onClick : function(target){
+        if (this._winner > 0) return;
+        if (!this._toggle) {
+            if (this._o_count <= 0) return;
+        } else {
+            if (this._x_count <= 0) return;
+        }
+
+        this.lockEvent(false);
+        for (var i = 0 ; i < 9 ; i++){
+            if (target == this._menuItem[i]) {
+                if (!this._toggle) {
+                    this._marks[i] = 1;
+                    --this._o_count;
+                } else {
+                    this._marks[i] = 2;
+                    --this._x_count;
+                }
+
+                this.lockLastBlock();
+                this.checkWinner();
+                if(this._winner == 0) this._step = this._step + 1;
+                this._toggle = !this._toggle;
+                this._menuItem[i].setEnabled(false);
+            }
+        }
+        //cc.log("==onclick clicked");
+        this.drawAll();
+
+        // ai proc
+        if (this._ai_type > 0) {
+            cc.director.getScheduler().scheduleCallbackForTarget(this, this.aiProcess, 1, 0, 0);
+        } else {
+            this.lockEvent(true);
+        }
+    },
+
+    onRound : function(target) {
+        if (this._winner > 0) return;
+
+        this.lockEvent(false);
+        for (var i = 0 ; i < 4 ; i++) {
+            if (target == this._roundrItem[i]) {
+                this.roundMarks(ai_roundTbl[i],false);
+                this.checkWinner();
+                if(this._winner == 0) this._step = this._step + 1;
+                this._toggle = !this._toggle;
+                break;
+            }
+            if (target == this._roundlItem[i]) {
+                this.roundMarks(ai_roundTbl[4+i],false);
+                this.checkWinner();
+                if(this._winner == 0) this._step = this._step + 1;
+                this._toggle = !this._toggle;
+                break;
+            }
+        }
+        //cc.log("==onround clicked");
+
+        // ai proc
+        cc.director.getScheduler().scheduleCallbackForTarget(this, this.aiProcess, 4, 0, 0);
+    },
+
+    onSlide : function(target){
+        if (this._winner > 0) return;
+
+        this.lockEvent(false);
+        for (var i = 0 ; i < 4 ; i++) {
+            if (target == this._slideItem[i]) {
+                this.slideMarks(i,false);
+                this.lockLastBlock();
+                this.checkWinner();
+                if(this._winner == 0) this._step = this._step + 1;
+                this._toggle = !this._toggle;
+            }
+        }
+        //cc.log("==onslide clicked");
+
+        // ai proc
+        cc.director.getScheduler().scheduleCallbackForTarget(this, this.aiProcess, 4, 0, 0);
+    }
+});
+
+var TttxScene = cc.Scene.extend({
+    _game_style:0,
+    ctor: function (style) {
+        this._super();
+        this._game_style = style;
+    },
+
+    onEnter:function () {
+        this._super();
+        var layer = new TttxLayer(this._game_style);
+        this.addChild(layer);
+    }
+});
