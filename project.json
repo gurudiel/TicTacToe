@@ -4,7 +4,6 @@
     "debugMode" : 1,
     "showFPS" : false,
     "frameRate" : 60,
-    "noCache" : false,
     "id" : "gameCanvas",
     "renderMode" : 0,
     "engineDir":"frameworks/cocos2d-html5",
@@ -13,6 +12,9 @@
 
     "jsList" : [
         "src/resource.js",
-        "src/app.js"
+        "src/app.js",
+        "src/accion.js",
+        "src/maquina.js",
+        "src/tictactoe.js"
     ]
 }
